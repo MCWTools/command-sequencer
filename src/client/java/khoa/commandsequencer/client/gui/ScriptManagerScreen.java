@@ -265,7 +265,7 @@ public class ScriptManagerScreen extends Screen {
 			}
 
 			@Override
-			public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean isDoubleClick) {
 				ScriptListWidget.this.setSelected(this);
 				return true;
 			}

@@ -3,7 +3,7 @@ package khoa.commandsequencer.client;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import khoa.commandsequencer.CommandSequencer;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 
@@ -30,21 +30,21 @@ public final class CommandSequencerKeybinds {
 	}
 
 	public static void register() {
-		runNextAction = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		runNextAction = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key.command-sequencer.run_next_action",
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_G,
 				CATEGORY
 		));
 
-		resetScript = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		resetScript = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key.command-sequencer.reset_script",
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_H,
 				CATEGORY
 		));
 
-		openScriptManager = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		openScriptManager = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key.command-sequencer.open_script_manager",
 				InputConstants.Type.KEYSYM,
 				GLFW.GLFW_KEY_UNKNOWN,

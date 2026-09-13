@@ -286,7 +286,7 @@ public class ScriptEditorScreen extends Screen {
 			}
 
 			@Override
-			public boolean mouseClicked(double mouseX, double mouseY, int button) {
+			public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean isDoubleClick) {
 				CommandListWidget.this.setSelected(this);
 				ScriptEditorScreen.this.updateButtonStates();
 				return true;
