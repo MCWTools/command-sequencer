@@ -125,7 +125,7 @@ public class ScriptEditorScreen extends Screen {
 	@Override
 	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
-		graphics.text(this.font, script.getName(), 8, this.height - 8 - this.font.lineHeight, 0x888888, true);
+		graphics.text(this.font, script.getName(), 8, this.height - 8 - this.font.lineHeight, 0xFF888888, true);
 	}
 
 	@Override
@@ -301,7 +301,7 @@ public class ScriptEditorScreen extends Screen {
 				if (hovered) {
 					graphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0x80FFFFFF);
 				}
-				graphics.text(ScriptEditorScreen.this.font, command, getX() + 4, getY() + 4, 0xFFFFFF, true);
+				graphics.text(ScriptEditorScreen.this.font, command, getX() + 4, getY() + 4, 0xFFFFFFFF, true);
 			}
 
 			@Override
