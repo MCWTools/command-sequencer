@@ -1,5 +1,6 @@
 package khoa.commandsequencer;
 
+import khoa.commandsequencer.vector.VectorCommands;
 import net.fabricmc.api.ModInitializer;
 
 import net.minecraft.resources.Identifier;
@@ -18,6 +19,10 @@ public class CommandSequencer implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Command Sequencer initialized");
+
+		// /vectortp và /vectorsummon — đăng ký server-side, hoạt động cả
+		// trong command block lẫn multiplayer chat (xem VectorCommands).
+		VectorCommands.register();
 	}
 
 	public static Identifier id(String path) {

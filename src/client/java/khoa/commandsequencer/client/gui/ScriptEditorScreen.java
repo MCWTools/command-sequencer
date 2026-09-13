@@ -4,7 +4,6 @@ import khoa.commandsequencer.client.CommandSequencerSettings;
 import khoa.commandsequencer.client.script.CommandCapture;
 import khoa.commandsequencer.client.script.Script;
 import khoa.commandsequencer.client.script.ScriptManager;
-import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -208,12 +207,6 @@ public class ScriptEditorScreen extends Screen {
 				self.refreshCommandList();
 			});
 			Minecraft.getInstance().setScreen(null);
-			Minecraft minecraft = Minecraft.getInstance();
-			if (minecraft.player != null) {
-				minecraft.player.displayClientMessage(
-						Component.translatable("gui.command-sequencer.capture_hint").withStyle(ChatFormatting.YELLOW),
-						false);
-			}
 			return;
 		}
 		Minecraft.getInstance().setScreen(new EditCommandScreen(this, "", command -> {

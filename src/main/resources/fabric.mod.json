@@ -10,7 +10,7 @@
 	"contact": {},
 	"license": "CC0-1.0",
 	"icon": "assets/command-sequencer/icon.png",
-	"environment": "client",
+	"environment": "*",
 	"entrypoints": {
 		"main": [
 			"khoa.commandsequencer.CommandSequencer"
