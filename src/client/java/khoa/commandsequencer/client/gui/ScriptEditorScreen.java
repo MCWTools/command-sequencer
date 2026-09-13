@@ -64,44 +64,53 @@ public class ScriptEditorScreen extends Screen {
 		int listY = tabY + tabHeight + padding;
 		int sideWidth = 110;
 		int listWidth = Math.max(80, this.width - padding * 2 - sideWidth);
-		int listHeight = Math.max(40, this.height - listY - padding - 28);
-
-		commandList = new CommandListWidget(this.minecraft, listWidth, listHeight, listY);
-		this.addRenderableWidget(commandList);
-		refreshCommandList();
 
 		int sideX = padding + listWidth + padding;
 		int sideButtonWidth = Math.min(100, sideWidth - padding);
-		int buttonHeight = 20;
-		int spacing = 4;
+
+		// 7 side-panel rows total (Add/Edit/Delete/MoveUp/MoveDown/Loop/AutoReset), plus the
+		// bottom Done row. On small/scaled-up screens (e.g. GUI Scale on a phone) this.height
+		// can be too short to fit fixed 20px rows with 4px spacing, which used to push rows
+		// below the visible/clickable area. Shrink row height/spacing to whatever fits instead.
+		int rows = 7;
+		int doneRowHeight = 20;
+		int availableForRows = this.height - listY - padding - doneRowHeight - padding;
+		int buttonHeight = Math.max(12, Math.min(20, availableForRows / rows - 2));
+		int spacing = Math.max(1, Math.min(4, (availableForRows - buttonHeight * rows) / Math.max(1, rows - 1)));
+		int rowStep = buttonHeight + spacing;
+
+		int listHeight = Math.max(30, this.height - listY - padding - doneRowHeight - padding);
+		commandList = new CommandListWidget(this.minecraft, listWidth, listHeight, listY);
+		this.addRenderableWidget(commandList);
+		refreshCommandList();
 
 		this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.add"), b -> onAdd())
 				.bounds(sideX, listY, sideButtonWidth, buttonHeight)
 				.build());
 		editButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.edit"), b -> onEdit())
-				.bounds(sideX, listY + (buttonHeight + spacing), sideButtonWidth, buttonHeight)
+				.bounds(sideX, listY + rowStep, sideButtonWidth, buttonHeight)
 				.build());
 		deleteButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.delete"), b -> onDelete())
-				.bounds(sideX, listY + (buttonHeight + spacing) * 2, sideButtonWidth, buttonHeight)
+				.bounds(sideX, listY + rowStep * 2, sideButtonWidth, buttonHeight)
 				.build());
 		moveUpButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.move_up"), b -> onMoveUp())
-				.bounds(sideX, listY + (buttonHeight + spacing) * 3, sideButtonWidth, buttonHeight)
+				.bounds(sideX, listY + rowStep * 3, sideButtonWidth, buttonHeight)
 				.build());
 		moveDownButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.move_down"), b -> onMoveDown())
-				.bounds(sideX, listY + (buttonHeight + spacing) * 4, sideButtonWidth, buttonHeight)
+				.bounds(sideX, listY + rowStep * 4, sideButtonWidth, buttonHeight)
 				.build());
 
 		// Action Runner mutual-exclusion toggles (spec section 5-6). Only relevant for the
 		// Run tab conceptually, but they are script-level settings, so shown regardless of tab.
 		loopButton = this.addRenderableWidget(Button.builder(loopLabel(), b -> onToggleLoop())
-				.bounds(sideX, listY + (buttonHeight + spacing) * 6, sideButtonWidth, buttonHeight)
+				.bounds(sideX, listY + rowStep * 5, sideButtonWidth, buttonHeight)
 				.build());
 		autoResetButton = this.addRenderableWidget(Button.builder(autoResetLabel(), b -> onToggleAutoReset())
-				.bounds(sideX, listY + (buttonHeight + spacing) * 7, sideButtonWidth, buttonHeight)
+				.bounds(sideX, listY + rowStep * 6, sideButtonWidth, buttonHeight)
 				.build());
 
 		this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
-				.bounds(padding, this.height - padding - buttonHeight, 100, buttonHeight)
+				.bounds(padding, this.height - padding - doneRowHeight, 100, doneRowHeight)
 				.build());
 
 		updateButtonStates();
