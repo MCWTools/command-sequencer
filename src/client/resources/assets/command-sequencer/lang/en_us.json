@@ -14,6 +14,8 @@
 	"gui.command-sequencer.file_name": "File name",
 	"gui.command-sequencer.script_name": "Script name",
 	"gui.command-sequencer.no_script_selected": "No script selected",
+	"gui.command-sequencer.run_next_action": "Run Next Action",
+	"gui.command-sequencer.reset_script": "Reset Script",
 
 	"gui.command-sequencer.tab_run": "Run",
 	"gui.command-sequencer.tab_reset": "Reset",
