@@ -77,7 +77,7 @@ public final class VectorTeleportCommand {
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(
                 Commands.literal("vectortp")
-                        .requires(source -> source.hasPermission(2))
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.argument("location", VectorArgument.vector())
                                 .executes(ctx -> teleportSelfToPos(ctx)))
                         .then(Commands.argument("destination", EntityArgument.entity())
