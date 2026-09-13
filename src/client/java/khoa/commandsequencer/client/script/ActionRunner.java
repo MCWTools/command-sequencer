@@ -15,10 +15,12 @@ import java.util.function.Consumer;
 public class ActionRunner {
 
 	public enum State {
-		READY,      // at command 0, nothing run yet (or just reset)
-		RUNNING,    // 0 < currentRunIndex < run.size(), mid-sequence
-		FINISHED,   // last run command executed, Loop/Auto Reset both off
-		RESETTING   // Auto Reset is currently replaying the reset[] list
+		READY,          // at command 0, nothing run yet (or just reset)
+		RUNNING,        // 0 < currentRunIndex < run.size(), mid-sequence
+		FINISHED,       // last run command executed, Loop/Auto Reset both off
+		AWAITING_RESET, // Auto Reset is on and the run list just finished; the next
+		                // Run Next Action press will play reset[] instead of a run command
+		RESETTING       // reset[] is currently being played back
 	}
 
 	private Script script;
@@ -56,6 +58,12 @@ public class ActionRunner {
 		if (script == null) {
 			return null;
 		}
+		if (state == State.AWAITING_RESET) {
+			// The next press plays reset[], so surface its first command (if any)
+			// rather than a run[] command that won't actually fire next.
+			List<String> reset = script.getResetCommands();
+			return reset.isEmpty() ? null : reset.get(0);
+		}
 		List<String> run = script.getRunCommands();
 		if (state == State.FINISHED || run.isEmpty()) {
 			return null;
@@ -69,6 +77,11 @@ public class ActionRunner {
 	/**
 	 * Executes exactly one Run command, per spec section 7: this method runs at most
 	 * one command per call, regardless of Loop / Auto Reset state.
+	 *
+	 * When Auto Reset is on, finishing the run list does NOT immediately fire the
+	 * reset[] commands - that would collapse "last run command" and "reset" into a
+	 * single button press. Instead state becomes AWAITING_RESET, and the *next*
+	 * press plays the reset sequence and rewinds back to run command 0.
 	 */
 	public void runNextAction() {
 		if (script == null) {
@@ -87,6 +100,13 @@ public class ActionRunner {
 			// Reset is auto-playing; Run Next Action has no effect mid-reset.
 			return;
 		}
+		if (state == State.AWAITING_RESET) {
+			// This press is the one that actually plays the reset[] list, then rewinds.
+			runResetSequence();
+			currentRunIndex = 0;
+			state = State.READY;
+			return;
+		}
 
 		commandExecutor.accept(run.get(currentRunIndex));
 		currentRunIndex++;
@@ -97,9 +117,8 @@ public class ActionRunner {
 				currentRunIndex = 0;
 				state = State.READY;
 			} else if (script.isAutoReset()) {
-				runResetSequence();
-				currentRunIndex = 0;
-				state = State.READY;
+				// Don't reset yet - wait for the next press (see method doc above).
+				state = State.AWAITING_RESET;
 			} else {
 				state = State.FINISHED;
 			}
