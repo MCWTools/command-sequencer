@@ -211,7 +211,8 @@ public class ScriptEditorScreen extends Screen {
 			Minecraft minecraft = Minecraft.getInstance();
 			if (minecraft.gui != null) {
 				minecraft.gui.getChat().addMessage(
-						Component.translatable("gui.command-sequencer.capture_hint").withStyle(ChatFormatting.YELLOW));
+						Component.translatable("gui.command-sequencer.capture_hint").withStyle(ChatFormatting.YELLOW),
+						null, null, null);
 			}
 			return;
 		}
