@@ -82,7 +82,11 @@ public class ScriptEditorScreen extends Screen {
 		int listHeight = Math.max(30, this.height - listY - padding - doneRowHeight - padding);
 		commandList = new CommandListWidget(this.minecraft, listWidth, listHeight, listY);
 		this.addRenderableWidget(commandList);
-		refreshCommandList();
+		// NOTE: refreshCommandList() is deferred to the end of init() - it calls
+		// updateButtonStates(), which touches editButton/deleteButton/moveUpButton/
+		// moveDownButton. Those fields aren't assigned until the button-creation lines
+		// below run, so calling refresh here (before they exist) threw an NPE on
+		// "Cannot assign field active because this.editButton is null".
 
 		this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.add"), b -> onAdd())
 				.bounds(sideX, listY, sideButtonWidth, buttonHeight)
@@ -113,6 +117,7 @@ public class ScriptEditorScreen extends Screen {
 				.bounds(padding, this.height - padding - doneRowHeight, 100, doneRowHeight)
 				.build());
 
+		refreshCommandList();
 		updateButtonStates();
 		updateTabButtons();
 	}
