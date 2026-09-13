@@ -74,6 +74,23 @@ public class CommandSequencerClient implements ClientModInitializer {
 			return !CommandCapture.tryCapture(full);
 		});
 
+		// Re-show the "next command will be added, not sent" hint every 5s (100 ticks)
+		// for as long as capture stays armed, since setOverlayMessage's own popup fades
+		// after a few seconds and the player could otherwise forget they're mid-capture.
+		int[] captureHintTicks = {0};
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (!CommandCapture.isArmed()) {
+				captureHintTicks[0] = 0;
+				return;
+			}
+			if (captureHintTicks[0] % 100 == 0 && client.gui != null) {
+				client.gui.setOverlayMessage(
+						Component.translatable("gui.command-sequencer.capture_hint").withStyle(ChatFormatting.YELLOW),
+						false);
+			}
+			captureHintTicks[0]++;
+		});
+
 		// while(...consumeClick()) drains queued presses from one tick - each call still
 		// triggers exactly one command, per spec section 7 (one Run command per key press).
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
