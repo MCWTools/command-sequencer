@@ -27,11 +27,9 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	// Fabric API. This is technically optional, but you probably want it anyway.
-	// Uses modImplementation (not implementation) so Loom remaps this mod jar into
-	// the split client/main source sets correctly - a plain "implementation" here is
-	// why KeyBindingHelper/HudElementRegistry were unresolved in :compileClientJava.
-	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	// Fabric API. Minecraft 26.1+ is unobfuscated, so Loom no longer remaps mod jars -
+	// modImplementation was removed for 26.1+; plain implementation is correct here.
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
 processResources {
