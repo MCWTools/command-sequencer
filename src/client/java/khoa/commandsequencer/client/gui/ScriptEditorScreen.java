@@ -1,0 +1,296 @@
+package khoa.commandsequencer.client.gui;
+
+import khoa.commandsequencer.client.script.Script;
+import khoa.commandsequencer.client.script.ScriptManager;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.ObjectSelectionList;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+import java.util.List;
+
+/**
+ * Script Editor (spec sections 3-6): exactly two tabs, Run and Reset, each holding an
+ * ordered command list with Add / Edit / Delete / Move Up / Move Down. Also exposes
+ * the Action Runner Loop / Auto Reset toggle, which enforces mutual exclusion
+ * (Script.setLoop/setAutoReset already does this - the buttons just reflect state).
+ */
+public class ScriptEditorScreen extends Screen {
+
+	private enum Tab { RUN, RESET }
+
+	private final Screen parent;
+	private final ScriptManager scriptManager;
+	private final Script script;
+
+	private Tab activeTab = Tab.RUN;
+
+	private CommandListWidget commandList;
+	private Button runTabButton;
+	private Button resetTabButton;
+	private Button loopButton;
+	private Button autoResetButton;
+	private Button editButton;
+	private Button deleteButton;
+	private Button moveUpButton;
+	private Button moveDownButton;
+
+	protected ScriptEditorScreen(Screen parent, ScriptManager scriptManager, Script script) {
+		super(Component.literal(script.getName()));
+		this.parent = parent;
+		this.scriptManager = scriptManager;
+		this.script = script;
+	}
+
+	@Override
+	protected void init() {
+		int padding = 8;
+		int tabY = padding;
+		int tabWidth = 80;
+		int tabHeight = 20;
+
+		runTabButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.tab_run"),
+						b -> switchTab(Tab.RUN))
+				.bounds(padding, tabY, tabWidth, tabHeight)
+				.build());
+		resetTabButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.tab_reset"),
+						b -> switchTab(Tab.RESET))
+				.bounds(padding + tabWidth, tabY, tabWidth, tabHeight)
+				.build());
+
+		int listY = tabY + tabHeight + padding;
+		int listHeight = this.height - listY - padding - 28;
+		int listWidth = this.width - padding * 2 - 110;
+
+		commandList = new CommandListWidget(this.minecraft, listWidth, listHeight, listY);
+		this.addRenderableWidget(commandList);
+		refreshCommandList();
+
+		int sideX = padding + listWidth + padding;
+		int buttonHeight = 20;
+		int spacing = 4;
+
+		this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.add"), b -> onAdd())
+				.bounds(sideX, listY, 100, buttonHeight)
+				.build());
+		editButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.edit"), b -> onEdit())
+				.bounds(sideX, listY + (buttonHeight + spacing), 100, buttonHeight)
+				.build());
+		deleteButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.delete"), b -> onDelete())
+				.bounds(sideX, listY + (buttonHeight + spacing) * 2, 100, buttonHeight)
+				.build());
+		moveUpButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.move_up"), b -> onMoveUp())
+				.bounds(sideX, listY + (buttonHeight + spacing) * 3, 100, buttonHeight)
+				.build());
+		moveDownButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.move_down"), b -> onMoveDown())
+				.bounds(sideX, listY + (buttonHeight + spacing) * 4, 100, buttonHeight)
+				.build());
+
+		// Action Runner mutual-exclusion toggles (spec section 5-6). Only relevant for the
+		// Run tab conceptually, but they are script-level settings, so shown regardless of tab.
+		loopButton = this.addRenderableWidget(Button.builder(loopLabel(), b -> onToggleLoop())
+				.bounds(sideX, listY + (buttonHeight + spacing) * 6, 100, buttonHeight)
+				.build());
+		autoResetButton = this.addRenderableWidget(Button.builder(autoResetLabel(), b -> onToggleAutoReset())
+				.bounds(sideX, listY + (buttonHeight + spacing) * 7, 100, buttonHeight)
+				.build());
+
+		this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
+				.bounds(padding, this.height - padding - buttonHeight, 100, buttonHeight)
+				.build());
+
+		updateButtonStates();
+		updateTabButtons();
+	}
+
+	@Override
+	public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.render(graphics, mouseX, mouseY, partialTick);
+		graphics.text(this.font, script.getName(), 8, this.height - 8 - this.font.lineHeight, 0x888888, true);
+	}
+
+	@Override
+	public void onClose() {
+		scriptManager.save(script);
+		Minecraft.getInstance().setScreen(parent);
+	}
+
+	private List<String> activeList() {
+		return activeTab == Tab.RUN ? script.getRunCommands() : script.getResetCommands();
+	}
+
+	private void switchTab(Tab tab) {
+		this.activeTab = tab;
+		refreshCommandList();
+		updateTabButtons();
+		updateButtonStates();
+	}
+
+	private void updateTabButtons() {
+		runTabButton.active = activeTab != Tab.RUN;
+		resetTabButton.active = activeTab != Tab.RESET;
+	}
+
+	private void refreshCommandList() {
+		commandList.refresh(activeList());
+	}
+
+	private void updateButtonStates() {
+		boolean hasSelection = commandList.getSelected() != null;
+		editButton.active = hasSelection;
+		deleteButton.active = hasSelection;
+
+		int selectedIndex = commandList.getSelectedIndex();
+		moveUpButton.active = hasSelection && selectedIndex > 0;
+		moveDownButton.active = hasSelection && selectedIndex >= 0 && selectedIndex < activeList().size() - 1;
+	}
+
+	private Component loopLabel() {
+		return Component.translatable(script.isLoop()
+				? "gui.command-sequencer.loop_on"
+				: "gui.command-sequencer.loop_off");
+	}
+
+	private Component autoResetLabel() {
+		return Component.translatable(script.isAutoReset()
+				? "gui.command-sequencer.auto_reset_on"
+				: "gui.command-sequencer.auto_reset_off");
+	}
+
+	private void onToggleLoop() {
+		script.setLoop(!script.isLoop());
+		loopButton.setMessage(loopLabel());
+		autoResetButton.setMessage(autoResetLabel());
+	}
+
+	private void onToggleAutoReset() {
+		script.setAutoReset(!script.isAutoReset());
+		loopButton.setMessage(loopLabel());
+		autoResetButton.setMessage(autoResetLabel());
+	}
+
+	private void onAdd() {
+		Minecraft.getInstance().setScreen(new EditCommandScreen(this, "", command -> {
+			activeList().add(command);
+			refreshCommandList();
+		}));
+	}
+
+	private void onEdit() {
+		int index = commandList.getSelectedIndex();
+		if (index < 0) {
+			return;
+		}
+		String current = activeList().get(index);
+		Minecraft.getInstance().setScreen(new EditCommandScreen(this, current, command -> {
+			activeList().set(index, command);
+			refreshCommandList();
+		}));
+	}
+
+	private void onDelete() {
+		int index = commandList.getSelectedIndex();
+		if (index < 0) {
+			return;
+		}
+		activeList().remove(index);
+		refreshCommandList();
+		updateButtonStates();
+	}
+
+	private void onMoveUp() {
+		int index = commandList.getSelectedIndex();
+		if (index <= 0) {
+			return;
+		}
+		List<String> list = activeList();
+		String moved = list.remove(index);
+		list.add(index - 1, moved);
+		refreshCommandList();
+		commandList.selectIndex(index - 1);
+		updateButtonStates();
+	}
+
+	private void onMoveDown() {
+		int index = commandList.getSelectedIndex();
+		List<String> list = activeList();
+		if (index < 0 || index >= list.size() - 1) {
+			return;
+		}
+		String moved = list.remove(index);
+		list.add(index + 1, moved);
+		refreshCommandList();
+		commandList.selectIndex(index + 1);
+		updateButtonStates();
+	}
+
+	/** Ordered command list for whichever tab (Run or Reset) is active. */
+	private class CommandListWidget extends ObjectSelectionList<CommandListWidget.CommandEntry> {
+
+		CommandListWidget(Minecraft minecraft, int width, int height, int y) {
+			super(minecraft, width, height, y, 16);
+		}
+
+		void refresh(List<String> commands) {
+			this.clearEntries();
+			for (int i = 0; i < commands.size(); i++) {
+				this.addEntry(new CommandEntry(commands.get(i), i));
+			}
+			ScriptEditorScreen.this.updateButtonStates();
+		}
+
+		int getSelectedIndex() {
+			CommandEntry selected = this.getSelected();
+			return selected == null ? -1 : selected.index;
+		}
+
+		void selectIndex(int index) {
+			// Entries are rebuilt (not mutated) on every refresh(), so selecting by index
+			// after a refresh means walking the freshly built entries and matching on the
+			// index each CommandEntry was constructed with.
+			for (CommandEntry entry : entriesView()) {
+				if (entry.index == index) {
+					this.setSelected(entry);
+					return;
+				}
+			}
+		}
+
+		private Iterable<CommandEntry> entriesView() {
+			// AbstractSelectionList exposes children() as the backing entry list in this
+			// version; if fabric-loom flags this as missing, use whatever the equivalent
+			// entry-iteration accessor is called (children()/getEntries()) in your mappings.
+			return this.children();
+		}
+
+		class CommandEntry extends ObjectSelectionList.Entry<CommandEntry> {
+			final String command;
+			final int index;
+
+			CommandEntry(String command, int index) {
+				this.command = command;
+				this.index = index;
+			}
+
+			@Override
+			public Component getNarration() {
+				return Component.literal(command);
+			}
+
+			@Override
+			public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float partialTick) {
+				graphics.text(font, command, getX() + 4, getY() + 4, 0xFFFFFF, true);
+			}
+
+			@Override
+			public boolean mouseClicked(double mouseX, double mouseY, int button) {
+				CommandListWidget.this.setSelected(this);
+				ScriptEditorScreen.this.updateButtonStates();
+				return true;
+			}
+		}
+	}
+}
