@@ -105,8 +105,8 @@ public class ScriptManagerScreen extends Screen {
 	}
 
 	@Override
-	public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
 		Script selected = scriptManager.getSelectedScript();
 		int rightX = PADDING * 2 + LIST_WIDTH;

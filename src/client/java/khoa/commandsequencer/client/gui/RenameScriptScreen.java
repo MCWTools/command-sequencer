@@ -45,8 +45,8 @@ public class RenameScriptScreen extends Screen {
 	}
 
 	@Override
-	public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		graphics.text(this.font, this.getTitle(), (this.width - this.font.width(this.getTitle())) / 2,
 				this.height / 2 - 30, 0xFFFFFF, true);
 	}

@@ -28,7 +28,10 @@ dependencies {
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 
 	// Fabric API. This is technically optional, but you probably want it anyway.
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	// Uses modImplementation (not implementation) so Loom remaps this mod jar into
+	// the split client/main source sets correctly - a plain "implementation" here is
+	// why KeyBindingHelper/HudElementRegistry were unresolved in :compileClientJava.
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
 processResources {

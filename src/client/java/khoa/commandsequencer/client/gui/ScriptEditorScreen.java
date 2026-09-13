@@ -107,8 +107,8 @@ public class ScriptEditorScreen extends Screen {
 	}
 
 	@Override
-	public void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		graphics.text(this.font, script.getName(), 8, this.height - 8 - this.font.lineHeight, 0x888888, true);
 	}
 
