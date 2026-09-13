@@ -56,8 +56,8 @@ public final class NextActionHud {
 		int y = origin[1];
 
 		graphics.fill(x, y, x + boxWidth, y + boxHeight, 0x90000000);
-		graphics.text(font, label, x + padding, y + padding, 0xFFFFFF, true);
-		graphics.text(font, truncatedCommand, x + padding, y + padding + lineHeight, 0xAAAAAA, true);
+		graphics.text(font, label, x + padding, y + padding, 0xFFFFFFFF, true);
+		graphics.text(font, truncatedCommand, x + padding, y + padding + lineHeight, 0xFFAAAAAA, true);
 	}
 
 	private static String describeState(ActionRunner runner) {
