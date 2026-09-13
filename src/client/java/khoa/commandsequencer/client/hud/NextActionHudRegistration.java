@@ -1,7 +1,7 @@
 package khoa.commandsequencer.client.hud;
 
 import khoa.commandsequencer.CommandSequencer;
-import net.fabricmc.fabric.api.client.rendering.v1.HudElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.resources.Identifier;
 
 /**

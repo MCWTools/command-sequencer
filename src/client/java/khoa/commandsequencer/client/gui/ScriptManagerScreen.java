@@ -33,6 +33,7 @@ public class ScriptManagerScreen extends Screen {
 
 	private final ScriptManager scriptManager;
 	private ScriptListWidget scriptList;
+	private int listWidth = LIST_WIDTH;
 
 	private Button editButton;
 	private Button renameButton;
@@ -48,14 +49,16 @@ public class ScriptManagerScreen extends Screen {
 
 	@Override
 	protected void init() {
-		int listHeight = this.height - PADDING * 2 - 28;
-		scriptList = new ScriptListWidget(this.minecraft, LIST_WIDTH, listHeight, PADDING);
+		int listWidth = Math.min(LIST_WIDTH, Math.max(80, (this.width - PADDING * 3) / 2));
+		this.listWidth = listWidth;
+		int listHeight = Math.max(40, this.height - PADDING * 2 - 28);
+		scriptList = new ScriptListWidget(this.minecraft, listWidth, listHeight, PADDING);
 		refreshList();
 		this.addRenderableWidget(scriptList);
 
-		int rightX = PADDING * 2 + LIST_WIDTH;
+		int rightX = PADDING * 2 + listWidth;
 		int buttonY = PADDING;
-		int buttonWidth = 90;
+		int buttonWidth = Math.max(60, Math.min(90, (this.width - rightX - PADDING - 4) / 2));
 		int buttonHeight = 20;
 		int spacing = 4;
 
@@ -109,7 +112,7 @@ public class ScriptManagerScreen extends Screen {
 		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
 		Script selected = scriptManager.getSelectedScript();
-		int rightX = PADDING * 2 + LIST_WIDTH;
+		int rightX = PADDING * 2 + listWidth;
 		int textY = PADDING + 20 * 4 + 16;
 
 		if (selected != null) {
@@ -261,7 +264,10 @@ public class ScriptManagerScreen extends Screen {
 
 			@Override
 			public void extractContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, boolean hovered, float partialTick) {
-				graphics.text(font, script.getName(), getX() + 4, getY() + 6, 0xFFFFFF, true);
+				if (hovered) {
+					graphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0x80FFFFFF);
+				}
+				graphics.text(ScriptManagerScreen.this.font, script.getName(), getX() + 4, getY() + 6, 0xFFFFFF, true);
 			}
 
 			@Override
