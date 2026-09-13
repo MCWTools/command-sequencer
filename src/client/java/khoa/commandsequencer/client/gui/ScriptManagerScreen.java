@@ -39,8 +39,13 @@ public class ScriptManagerScreen extends Screen {
 	private Button renameButton;
 	private Button deleteButton;
 	private Button exportButton;
+	private Button runNextActionButton;
+	private Button resetScriptButton;
 
 	private EditBox importExportNameBox;
+
+	private int cachedRowStep = 24;
+	private int cachedButtonHeight = 20;
 
 	public ScriptManagerScreen() {
 		super(Component.translatable("gui.command-sequencer.script_manager"));
@@ -51,16 +56,31 @@ public class ScriptManagerScreen extends Screen {
 	protected void init() {
 		int listWidth = Math.min(LIST_WIDTH, Math.max(80, (this.width - PADDING * 3) / 2));
 		this.listWidth = listWidth;
-		int listHeight = Math.max(40, this.height - PADDING * 2 - 28);
+
+		int rightX = PADDING * 2 + listWidth;
+		int buttonWidth = Math.max(60, Math.min(90, (this.width - rightX - PADDING - 4) / 2));
+		int spacing = 4;
+
+		// 5 top rows (New/Edit, Rename/Delete, file-name box, Import/Export,
+		// Run Next Action/Reset) + 2 bottom rows (HUD Settings, Done). Same reasoning as
+		// ScriptEditorScreen: don't cement 20px rows when this.height might be too short
+		// for all of them (phone GUI Scale) - shrink instead of letting rows collide/hide.
+		int topRows = 5;
+		int bottomRows = 2;
+		int totalRows = topRows + bottomRows;
+		int availableForRows = this.height - PADDING * 2;
+		int buttonHeight = Math.max(12, Math.min(20, availableForRows / totalRows - 2));
+		int rowSpacing = Math.max(1, Math.min(spacing, (availableForRows - buttonHeight * totalRows) / Math.max(1, totalRows - 1)));
+		int rowStep = buttonHeight + rowSpacing;
+		this.cachedRowStep = rowStep;
+		this.cachedButtonHeight = buttonHeight;
+
+		int listHeight = Math.max(40, this.height - PADDING * 2);
 		scriptList = new ScriptListWidget(this.minecraft, listWidth, listHeight, PADDING);
 		refreshList();
 		this.addRenderableWidget(scriptList);
 
-		int rightX = PADDING * 2 + listWidth;
 		int buttonY = PADDING;
-		int buttonWidth = Math.max(60, Math.min(90, (this.width - rightX - PADDING - 4) / 2));
-		int buttonHeight = 20;
-		int spacing = 4;
 
 		this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.new_script"), b -> onNewScript())
 				.bounds(rightX, buttonY, buttonWidth, buttonHeight)
@@ -71,17 +91,17 @@ public class ScriptManagerScreen extends Screen {
 				.build());
 
 		renameButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.rename"), b -> onRenameScript())
-				.bounds(rightX, buttonY + buttonHeight + spacing, buttonWidth, buttonHeight)
+				.bounds(rightX, buttonY + rowStep, buttonWidth, buttonHeight)
 				.build());
 
 		deleteButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.delete"), b -> onDeleteScript())
-				.bounds(rightX + buttonWidth + spacing, buttonY + buttonHeight + spacing, buttonWidth, buttonHeight)
+				.bounds(rightX + buttonWidth + spacing, buttonY + rowStep, buttonWidth, buttonHeight)
 				.build());
 
 		importExportNameBox = this.addRenderableWidget(new EditBox(
 				this.font,
 				rightX,
-				buttonY + (buttonHeight + spacing) * 2,
+				buttonY + rowStep * 2,
 				buttonWidth * 2 + spacing,
 				buttonHeight,
 				Component.translatable("gui.command-sequencer.file_name")
@@ -89,15 +109,25 @@ public class ScriptManagerScreen extends Screen {
 		importExportNameBox.setValue("script");
 
 		this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.import"), b -> onImport())
-				.bounds(rightX, buttonY + (buttonHeight + spacing) * 3, buttonWidth, buttonHeight)
+				.bounds(rightX, buttonY + rowStep * 3, buttonWidth, buttonHeight)
 				.build());
 
 		exportButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.export"), b -> onExport())
-				.bounds(rightX + buttonWidth + spacing, buttonY + (buttonHeight + spacing) * 3, buttonWidth, buttonHeight)
+				.bounds(rightX + buttonWidth + spacing, buttonY + rowStep * 3, buttonWidth, buttonHeight)
+				.build());
+
+		// Run Next Action / Reset Script as clickable buttons, mirroring the keybinds
+		// (spec sections 7-8) - some players don't want to bind extra keys just to test
+		// a script from the manager screen.
+		runNextActionButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.run_next_action"), b -> onRunNextAction())
+				.bounds(rightX, buttonY + rowStep * 4, buttonWidth, buttonHeight)
+				.build());
+		resetScriptButton = this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.reset_script"), b -> onResetScript())
+				.bounds(rightX + buttonWidth + spacing, buttonY + rowStep * 4, buttonWidth, buttonHeight)
 				.build());
 
 		this.addRenderableWidget(Button.builder(Component.translatable("gui.command-sequencer.hud_settings"), b -> onHudSettings())
-				.bounds(rightX, this.height - PADDING - buttonHeight * 2 - spacing, buttonWidth * 2 + spacing, buttonHeight)
+				.bounds(rightX, this.height - PADDING - rowStep - buttonHeight, buttonWidth * 2 + spacing, buttonHeight)
 				.build());
 
 		this.addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
@@ -113,17 +143,20 @@ public class ScriptManagerScreen extends Screen {
 
 		Script selected = scriptManager.getSelectedScript();
 		int rightX = PADDING * 2 + listWidth;
-		int textY = PADDING + 20 * 4 + 16;
+		// Sits just below the Run Next Action / Reset row (5 top rows, 0-indexed 0-4),
+		// clamped so it can't overlap the HUD Settings / Done buttons anchored to the
+		// bottom of the screen on short/scaled-up GUIs.
+		int textY = Math.min(PADDING + cachedRowStep * 5 + 4, this.height - PADDING - cachedRowStep - cachedButtonHeight - 40);
 
 		if (selected != null) {
-			graphics.text(this.font, selected.getName(), rightX, textY, 0xFFFFFF, true);
-			graphics.text(this.font, selected.getDescription(), rightX, textY + 12, 0xAAAAAA, true);
+			graphics.text(this.font, selected.getName(), rightX, textY, 0xFFFFFFFF, true);
+			graphics.text(this.font, selected.getDescription(), rightX, textY + 12, 0xFFAAAAAA, true);
 			graphics.text(this.font,
 					"Run: " + selected.getRunCommands().size() + "   Reset: " + selected.getResetCommands().size(),
-					rightX, textY + 26, 0x888888, true);
+					rightX, textY + 26, 0xFF888888, true);
 		} else {
 			graphics.text(this.font, Component.translatable("gui.command-sequencer.no_script_selected"),
-					rightX, textY, 0x888888, true);
+					rightX, textY, 0xFF888888, true);
 		}
 	}
 
@@ -150,6 +183,16 @@ public class ScriptManagerScreen extends Screen {
 		renameButton.active = hasSelection;
 		deleteButton.active = hasSelection;
 		exportButton.active = hasSelection;
+		runNextActionButton.active = hasSelection;
+		resetScriptButton.active = hasSelection;
+	}
+
+	private void onRunNextAction() {
+		CommandSequencerClient.getActionRunner().runNextAction();
+	}
+
+	private void onResetScript() {
+		CommandSequencerClient.getActionRunner().resetScript();
 	}
 
 	private void onNewScript() {
@@ -267,7 +310,7 @@ public class ScriptManagerScreen extends Screen {
 				if (hovered) {
 					graphics.fill(getX(), getY(), getX() + getWidth(), getY() + getHeight(), 0x80FFFFFF);
 				}
-				graphics.text(ScriptManagerScreen.this.font, script.getName(), getX() + 4, getY() + 6, 0xFFFFFF, true);
+				graphics.text(ScriptManagerScreen.this.font, script.getName(), getX() + 4, getY() + 6, 0xFFFFFFFF, true);
 			}
 
 			@Override
